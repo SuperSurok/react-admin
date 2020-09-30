@@ -2,7 +2,7 @@
 
  [Data Provider](#Data-Provider)
    * [Описание](#Описание)
-   * [Формат запроса](#request-formam)
+   * [Формат запроса](#request-format)
   
 ## Описание (Проводник данных)
   

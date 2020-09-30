@@ -1,10 +1,10 @@
 # React-admin
 
- [Data Provider](#Data-Provider)
+ 1. [Data Provider](#Data-Provider)
    * [Описание](#Описание)
    * [Формат запроса](#request-format)
- [Admin](#admin)
- [Resource](#resource)
+ 1. [Admin](#admin)
+ 1. [Resource](#resource)
   
 ## Описание (Проводник данных)
   

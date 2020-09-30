@@ -3,6 +3,8 @@
  [Data Provider](#Data-Provider)
    * [Описание](#Описание)
    * [Формат запроса](#request-format)
+   * [<Admin>](#admin)
+   * [<Resource>](#resource)
   
 ## Описание (Проводник данных)
   
@@ -145,4 +147,38 @@ dataProvider
     }
   }
  }
+```
+
+## Admin
+
+Компонент ```<Admin>```создаётт приложение со своим собственным состоянием, роутингом и контроллером логики.
+```<Admin>``` требуется только свойство ```dataProvider``` и как минимум один дочерний ```<Resource>``` для начала работы.
+
+## Resource
+
+Компонент ```<Resource>``` отображает данные полученные из API и предоставляет возможнось работы с CRUD (create-read-update-delete).
+Свойства для работы с интрефейсом CRUD
+ * list - если определён, название ресурса отображается в меню
+ * create - созданиие новой сущности
+ * edit - возможность редактирования сущности
+ * show - показать отдельную сущность
+ 
+Пример
+```js
+import * as React from "react";
+import { Admin, Resource } from 'react-admin';
+import jsonServerProvider from 'ra-data-json-server';
+
+import { PostList, PostCreate, PostEdit, PostShow, PostIcon } from './posts';
+import { UserList } from './posts';
+import { CommentList, CommentEdit, CommentCreate, CommentIcon } from './comments';
+
+const App = () => (
+    <Admin dataProvider={jsonServerProvider('https://jsonplaceholder.typicode.com')}>
+        <Resource name="posts" list={PostList} create={PostCreate} edit={PostEdit} show={PostShow} icon={PostIcon} />
+        <Resource name="users" list={UserList} />
+        <Resource name="comments" list={CommentList} create={CommentCreate} edit={CommentEdit} icon={CommentIcon} />
+        <Resource name="tags" />
+    </Admin>
+);
 ```

@@ -3,8 +3,8 @@
  [Data Provider](#Data-Provider)
    * [Описание](#Описание)
    * [Формат запроса](#request-format)
-   * [<Admin>](#admin)
-   * [<Resource>](#resource)
+   * [Admin](#admin)
+   * [Resource](#resource)
   
 ## Описание (Проводник данных)
   

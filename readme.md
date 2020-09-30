@@ -2,7 +2,7 @@
 
  [Data Provider](#Data-Provider)
    * [Описание](#Описание)
-   * [Использование](#Использование)
+   * [Формат запроса](#request-formam)
   
 ## Описание (Проводник данных)
   
@@ -45,48 +45,104 @@ dataProvider
     deleteMany: (resource, params) => Promise,
   }
 ```
-Описание методов dataProvider:
-  <table>
-      <tr><td>getList</td><td>Поиск ресурса</td><td>{ pagination: { page: {int} , perPage: {int} }, sort: { field: {string}, order: {string} }, filter: {Object} }</td></tr>
-      <tr><td>getOne</td><td>Взять один ресурс по id</td><td>{ id: {mixed} }</td></tr>
-      <tr><td>getMany</td><td>Взять список ресурсов по их id</td><td>{ ids: {mixed[]} }</td></tr>
-      <tr><td>getManyReference</td><td>Получить список ресурсов относящихся к другому ресурсу</td><td>{ target: {string}, id: {mixed}, pagination: { page: {int} , perPage: {int} }, sort: { field: {string}, order: {string} }, filter: {Object} }</td></tr>
-      <tr><td>create</td><td>Создать один ресурс</td><td>{ data: {Object} }</td></tr>
-      <tr><td>update</td><td>Обновить один ресурс</td><td>{ id: {mixed}, data: {Object}, previousData: {Object} }</td></tr>
-      <tr><td>updateMany</td><td>Обновить множество ресурсов</td><td>{ ids: {mixed[]}, data: {Object} }</td></tr>
-      <tr><td>delete</td><td>Удалить один ресурс</td><td>{ id: {mixed}, previousData: {Object} }</td></tr>
-      <tr><td>deleteMany</td><td>Удалить множество ресурсов</td><td>{ ids: {mixed[]} }</td></tr>
-</table>
+### Формат запроса
+Стандартные методы
+| Метод | Описание | Формат праметров
+| ------ | ------ | ------ |
+| getList | Поиск ресурса | ```{ pagination: { page: {int} , perPage: {int} }, sort: { field: {string}, order: {string} }, filter: {Object} }``` |
+| getOne | Взять один ресурс по id | ```{ id: {mixed} }``` |
+| getMany | Взять список ресурсов по их id |  ```ids: {mixed[]} }``` |
+| getManyReference | Получить список ресурсов относящихся к другому ресурсу | ```{ target: {string}, id: {mixed}, pagination: { page: {int} , perPage: {int} }, sort: { field: {string}, order: {string} }, filter: {Object} }``` |
+| create | Создать один ресурс | ```{ data: {Object} }``` |
+| update | Обновить один ресурс | ```{ id: {mixed}, data: {Object}, previousData: {Object} }``` |
+| updateMany | Обновить множество ресурсов | ```{ ids: {mixed[]}, data: {Object} }``` |
+| delete | Удалить один ресурс | ```{ id: {mixed}, previousData: {Object} }``` |
+| deleteMany | Удалить множество ресурсов | ```{ ids: {mixed[]} }``` |
 
-Примеры:
+Примеры
 ```js
-dataProvider.getList('posts', {
-  pagination: { page: 1, perPage: 5 },
-  sort: { field: 'title', order: 'ASC' },
-  filter: { author_id: 12 },
-});
-dataProvider.getOne('posts', { id: 123 });
-dataProvider.getMany('posts', { ids: [123, 124, 125] });
-dataProvider.getManyReference('comments', {
-    target: 'post_id',
-    id: 123,
-    sort: { field: 'created_at', order: 'DESC' }
-});
-dataProvider.update('posts', {
-    id: 123,
-    data: { title: "hello, world!" },
-    previousData: { title: "previous title" }
-});
-dataProvider.updateMany('posts', {
-    ids: [123, 234],
-    data: { views: 0 },
-});
-dataProvider.create('posts', { data: { title: "hello, world" } });
-dataProvider.delete('posts', {
-    id: 123,
-    previousData: { title: "hello, world" }
-});
-dataProvider.deleteMany('posts', { ids: [123, 234] });
+ dataProvider.getList('posts', {
+   pagination: { page: 1, perPage: 5 },
+   sort: { field: 'title', order: 'ASC' },
+   filter: { author_id: 12 },
+ });
+ dataProvider.getOne('posts', { id: 123 });
+ dataProvider.getMany('posts', { ids: [123, 124, 125] });
+ dataProvider.getManyReference('comments', {
+     target: 'post_id',
+     id: 123,
+     sort: { field: 'created_at', order: 'DESC' }
+ });
+ dataProvider.update('posts', {
+     id: 123,
+     data: { title: "hello, world!" },
+     previousData: { title: "previous title" }
+ });
+ dataProvider.updateMany('posts', {
+     ids: [123, 234],
+     data: { views: 0 },
+ });
+ dataProvider.create('posts', { data: { title: "hello, world" } });
+ dataProvider.delete('posts', {
+     id: 123,
+     previousData: { title: "hello, world" }
+ });
+ dataProvider.deleteMany('posts', { ids: [123, 234] });
 ```
+Пример рабочего кода
+```js
+ export const dataProvider: DataProvider = {
+  getList: (resource: string, params: GetListParams) => {
+    switch (resource as KnownResources) {
+      case 'entities': {
+        const { sort: paramsSort, pagination: paramsPagination } = params;
 
-  
+        const sort = entitySortEncode(paramsSort as SortType);
+        const paging = entityPaginationEncode(paramsPagination as PaginationType);
+        const filter: EntityDetailsFilter = {
+          ...params.filter,
+          sort,
+          paging,
+        };
+
+        return http.post<EntityDetailsView[]>('/entity/admin', filter).then(({ data }) => {
+          // NOTE: Do data normalization, because the number of returned elements
+          // is (paging.limit + 1) - for 'has more' indication.
+          let normalizedData = data;
+          const itemPerPage = filter.paging?.limit;
+          if (itemPerPage && data.length > itemPerPage) {
+            normalizedData = dropRight(data, data.length - itemPerPage);
+          }
+
+          return Promise.resolve({ data: normalizedData, total: calcTotal(data.length, paging) });
+        });
+      }
+
+      case 'accounts':
+        return http.get<AccountView[]>(`/usermanager/account/extended`).then(({ data }) => {
+          return Promise.resolve({ data, total: data.length });
+        });
+
+      case 'assistants':
+        return http
+          .get<AccountShortView[]>(`/usermanager/account/${params.filter?.id}/assistant/available`)
+          .then(({ data }) => {
+            return Promise.resolve({ data, total: data.length });
+          });
+
+      case 'companies':
+        return http.get<CompanyShortView[]>(`/usermanager/company`).then(({ data }) => {
+          return Promise.resolve({ data, total: data.length });
+        });
+
+      case 'parents':
+        return http.get<CompanyShortView[]>(`/usermanager/company`).then(({ data }) => {
+          return Promise.resolve({ data: data.filter((item) => item.id !== +params.filter.id), total: data.length });
+        });
+
+      default:
+        return Promise.reject(`Unknown resource '${resource}'`);
+    }
+  }
+ }
+```

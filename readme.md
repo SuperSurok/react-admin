@@ -1,11 +1,18 @@
 # React-admin
 
- 1. [Data Provider](#Data-Provider)
-   * [Описание](#Описание)
-   * [Формат запроса](#request-format)
- 1. [Admin](#admin)
- 1. [Resource](#resource)
-  
+1. [Data Provider](#Data-Provider)
+    * [Описание](#Описание)
+    * [Формат запроса](#request-format)
+
+1. [Admin](#admin)
+1. [Resource](#resource)
+1. [List View](#list-view)
+1. [List Component](#list-component)  
+1. [ListGuesser](#ListGuesser)
+1. [useListContext](#uselistcontext)
+1. [ListBase](#ListBase)
+1. [useListController](#useListController)
+
 ## Описание (Проводник данных)
   
 Каждый раз, когда react-admin необходимо взаимодействовать с API он вызвает методы объекта dataProvider:
@@ -182,3 +189,85 @@ const App = () => (
     </Admin>
 );
 ```
+## List View
+
+```<List>``` отображает список записей полученных из API. Когда данные попадают в ```ListContext``` они становяться доступными для потомков, обычно ```<Datagrid>```, который затем делегирует рендеринг каждого свойства записи компоненту ```<Field>```.
+
+## List Component
+```<List>``` принимает список записей из ```dataProvider``` и отображает макет (заголовок, кнопки, фильтры, пагинацию). Он делегирует рендеринг списка записей своим дочерним компонентам. Обычно за это отвечает ```<Datagrid>```, отображает таблицу с одной строкой для каждой записи.
+
+Список свойств компонента ```<List>```:
+* title
+* actions
+* exporter
+* bulkActions
+* filters - отображает фильтр компонента
+* filterDefaultValues - значение по умолчанию для фильтра
+* perPage
+* sort
+* filter
+* pagination
+* aside
+* empty
+
+Minimal code to display list:
+```js
+ import * as React from "react";
+ import { Admin, Resource } from 'react-admin';
+ import jsonServerProvider from 'ra-data-json-server';
+
+ import { PostList } from './posts';
+
+ const App = () => (
+     <Admin dataProvider={jsonServerProvider('https://jsonplaceholder.typicode.com')}>
+         <Resource name="posts" list={PostList} />
+     </Admin>
+ );
+
+ export default App;
+
+ // in src/posts.js
+ import * as React from "react";
+ import { List, Datagrid, TextField } from 'react-admin';
+
+ export const PostList = (props) => (
+     <List {...props}>
+         <Datagrid>
+             <TextField source="id" />
+             <TextField source="title" />
+             <TextField source="body" />
+         </Datagrid>
+     </List>
+ );
+```
+
+## ListGuesser
+
+Вместо использования настраиваемого ```<List>``` можно использовать ```<ListGuesser>```, который сам определяет на основе полученных данниых из API, какие поля нужно отобразить. Так же он отображает в консоли компонент  ```<Datagrid>``` с дочерними компонентами. Можно скопировать необходимые поля в свой код.
+
+## useListContext
+
+Компонент ```<List>``` заботится о получении данных и передаёт эти данные в контекст называемый ListContext, что делает их доступными для потомков. По сути он передаёт большое количество переменных в контекст. Любой компонент может получить данные, используя ```useContextHook``` hook. По-факту ```<Datagrid>```, ```<Filter>```, ```<Pagination>``` используют ```useContextHook``` hook.
+
+## ListBase
+
+В добавок к получению данных компонент ```<List>``` отображает заголовок страницы, действия, контент и боковое меню. ```<ListBase>``` позволяет создать свой собственный ```<List>```.
+
+## useListController
+
+Как объяснялось ранее, ```<ListBase>``` получает данные и передаёт их в ```<ListContext>``` и затем отображает своих детей. По-факту код ```<ListBase>``` очень простой: 
+```js
+ import * as React from 'react';
+ import { useListController, ListContextProvider } from 'react-admin';
+
+ const ListBase = ({ children, ...props }) => (
+     <ListContextProvider value={useListController(props)}>
+         {children}
+     </ListContextProvider>
+ );
+
+export default ListBase;
+```
+Как видно, часть контроллера представления списка обрабатывается хуком ```]useListController```. Если не хочется ипользовать ```<ListContext>``` в кастомном списке, можно использовать ```useListContoller```, чтоба напрямую полчить доступ к аднным списка. Он возваращает такой же объект как и ```useListContext```.
+
+Если кастомный компонент не использует ```ListContextProvider```, нельзя использовать ```<Datagrid>```, ```<Simplelist>```, ```<Pagination>``` и т.д. Все эти компоненты полагаются на ```ListContext```.

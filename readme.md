@@ -30,7 +30,7 @@ dataProvider
       console.log(response.data); // { id: 123, title: "hello, world" }
 });
 ```
-Задача dataProvider заключается в том, чтобы обернуть эти вызовы метода в HTTP запрос и трансформировать HTTP ответ в формат данных ожидаемых reac-admin.
+Задача dataProvider заключается в том, чтобы обернуть эти вызовы метода в HTTP запрос и трансформировать HTTP ответ в формат данных ожидаемых react-admin.
 Технически dataProvider это адаптер для API.
 
 Включить проводник можно, передав его как свойство в компонент ```<Admin>```:
@@ -75,7 +75,7 @@ dataProvider
 | delete | Удалить один ресурс | ```{ id: {mixed}, previousData: {Object} }``` |
 | deleteMany | Удалить множество ресурсов | ```{ ids: {mixed[]} }``` |
 
-Примеры
+Примеры:
 ```js
  dataProvider.getList('posts', {
    pagination: { page: 1, perPage: 5 },
@@ -105,7 +105,7 @@ dataProvider
  });
  dataProvider.deleteMany('posts', { ids: [123, 234] });
 ```
-Пример рабочего кода
+Пример реального кода:
 ```js
  export const dataProvider: DataProvider = {
   getList: (resource: string, params: GetListParams) => {
@@ -165,19 +165,36 @@ dataProvider
 
 ## Admin
 
-Компонент ```<Admin>```создаётт приложение со своим собственным состоянием, роутингом и контроллером логики.
-```<Admin>``` требуется только свойство ```dataProvider``` и как минимум один дочерний ```<Resource>``` для начала работы.
+Компонент ```<Admin>```создаёт приложение со своим собственным состоянием, роутингом и контроллером логики.
+Минимальный набор свойств для ```<Admin>``` свойство ```dataProvider``` и как минимум один дочерний ```<Resource>```.
+
+Пример:
+```js
+import * as React from "react";
+
+import { Admin, Resource } from 'react-admin';
+import simpleRestProvider from 'ra-data-simple-rest';
+
+import { PostList } from './posts';
+
+const App = () => (
+    <Admin dataProvider={simpleRestProvider('http://path.to.my.api')}>
+        <Resource name="posts" list={PostList} />
+    </Admin>
+);
+```
 
 ## Resource
 
-Компонент ```<Resource>``` отображает данные полученные из API и предоставляет возможнось работы с CRUD (create-read-update-delete).
-Свойства для работы с интрефейсом CRUD
+Компонент ```<Resource>``` отображает данные полученные из API и предоставляет возможность работы с CRUD (create-read-update-delete).
+
+Свойства для работы с интрефейсом CRUD:
  * list - если определён, название ресурса отображается в меню
  * create - созданиие новой сущности
  * edit - возможность редактирования сущности
  * show - показать отдельную сущность
  
-Пример
+Пример:
 ```js
 import * as React from "react";
 import { Admin, Resource } from 'react-admin';
@@ -198,7 +215,7 @@ const App = () => (
 ```
 ## List View
 
-```<List>``` отображает список записей полученных из API. Когда данные попадают в ```ListContext``` они становяться доступными для потомков, обычно ```<Datagrid>```, который затем делегирует рендеринг каждого свойства записи компоненту ```<Field>```.
+```<List>``` отображает список записей полученных из API. Когда данные попадают в ```ListContext``` они становятся доступными для потомков, обычно ```<Datagrid>```, который затем делегирует рендеринг каждого свойства записи компоненту ```<Field>```.
 
 ## List Component
 ```<List>``` принимает список записей из ```dataProvider``` и отображает макет (заголовок, кнопки, фильтры, пагинацию). Он делегирует рендеринг списка записей своим дочерним компонентам. Обычно за это отвечает ```<Datagrid>```, отображает таблицу с одной строкой для каждой записи.
@@ -217,7 +234,7 @@ const App = () => (
 * aside
 * empty
 
-Minimal code to display list:
+Минимальный код для отображения списка:
 ```js
  import * as React from "react";
  import { Admin, Resource } from 'react-admin';
@@ -248,19 +265,116 @@ Minimal code to display list:
  );
 ```
 
-## ListGuesser
+#### Page Title
+По умолчанию заголовок для списка это "[resource] list" => "Posts list". Чтобы изменить его нужно использовать свойство ```title```:
+```js
+export const PostList = (props) => (
+    <List {...props} title="List of posts">
+        ...
+    </List>
+);
+```
+#### Actions
+Можно заменить дефолтные действия со списком на свои, используя свойство ```actions```.
 
-Вместо использования настраиваемого ```<List>``` можно использовать ```<ListGuesser>```, который сам определяет на основе полученных данниых из API, какие поля нужно отобразить. Так же он отображает в консоли компонент  ```<Datagrid>``` с дочерними компонентами. Можно скопировать необходимые поля в свой код.
+Пример:
+```js
+import * as React from 'react';
+import { cloneElement, useMemo } from 'react';
+import PropTypes from 'prop-types';
+import {
+    useListContext,
+    TopToolbar,
+    CreateButton,
+    ExportButton,
+    Button,
+    sanitizeListRestProps,
+} from 'react-admin';
+import IconEvent from '@material-ui/icons/Event';
 
-## useListContext
+const ListActions = (props) => {
+    const {
+        className,
+        exporter,
+        filters,
+        maxResults,
+        ...rest
+    } = props;
+    const {
+        currentSort,
+        resource,
+        displayedFilters,
+        filterValues,
+        hasCreate,
+        basePath,
+        selectedIds,
+        showFilter,
+        total,
+    } = useListContext();
+    return (
+        <TopToolbar className={className} {...sanitizeListRestProps(rest)}>
+            {filters && cloneElement(filters, {
+                resource,
+                showFilter,
+                displayedFilters,
+                filterValues,
+                context: 'button',
+            })}
+            <CreateButton basePath={basePath} />
+            <ExportButton
+                disabled={total === 0}
+                resource={resource}
+                sort={currentSort}
+                filterValues={filterValues}
+                maxResults={maxResults}
+            />
+            {/* Add your custom actions */}
+            <Button
+                onClick={() => { alert('Your custom action'); }}
+                label="Show calendar"
+            >
+                <IconEvent />
+            </Button>
+        </TopToolbar>
+    );
+};
+
+export const PostList = (props) => (
+    <List {...props} actions={<ListActions />}>
+        ...
+    </List>
+);
+```
+
+Используя кастомный ```<ListActions>``` можно отключить или переопределить порядок кнопок на основании прав доступа. Для этого нужно передать ```permissions``` вниз из компонента ```<List>```:
+```js
+export const PostList = ({ permissions, ...props }) => (
+    <List {...props} actions={<PostActions permissions={permissions} {...props} />}>
+        ...
+    </List>
+);
+```
+#### Exporter
+Существует дефолтная возможность экспорта файлов - кнопка ```<ExportButton>```. Кнопка неактивна, если в текущем ```<List>``` нет данных.
+
+Действие конопки по умолчанию:
+   1. Вызов dataProvider с сортировкой и фильтром(без пагинации)
+   1. Трансформация в SVG
+   1. Загрузка CSV файла
+
+### ListGuesser
+
+Вместо использования настраиваемого ```<List>``` можно использовать ```<ListGuesser>```, который сам определяет на основе полученных данных из API, какие поля нужно отобразить. Так же он отображает в консоли компонент  ```<Datagrid>``` с дочерними компонентами. Можно скопировать необходимые поля в свой код.
+
+### useListContext
 
 Компонент ```<List>``` заботится о получении данных и передаёт эти данные в контекст называемый ListContext, что делает их доступными для потомков. По сути он передаёт большое количество переменных в контекст. Любой компонент может получить данные, используя ```useContextHook``` hook. По-факту ```<Datagrid>```, ```<Filter>```, ```<Pagination>``` используют ```useContextHook``` hook.
 
-## ListBase
+### ListBase
 
 В добавок к получению данных компонент ```<List>``` отображает заголовок страницы, действия, контент и боковое меню. ```<ListBase>``` позволяет создать свой собственный ```<List>```.
 
-## useListController
+### useListController
 
 Как объяснялось ранее, ```<ListBase>``` получает данные и передаёт их в ```<ListContext>``` и затем отображает своих детей. По-факту код ```<ListBase>``` очень простой: 
 ```js

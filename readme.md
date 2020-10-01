@@ -12,6 +12,13 @@
 1. [useListContext](#uselistcontext)
 1. [ListBase](#ListBase)
 1. [useListController](#useListController)
+1. [Datagrid](#datagrig)
+      * [body](#body)
+      * [rowStyle](#rowstyle)
+      * [rowClick](#rowClick)
+      * [expand](#expand)
+      * [isRowSelectable](#isrowslectable)
+      * [CSS](#css)
 
 ## Описание (Проводник данных)
   
@@ -268,6 +275,176 @@ Minimal code to display list:
 
 export default ListBase;
 ```
-Как видно, часть контроллера представления списка обрабатывается хуком ```]useListController```. Если не хочется ипользовать ```<ListContext>``` в кастомном списке, можно использовать ```useListContoller```, чтоба напрямую полчить доступ к аднным списка. Он возваращает такой же объект как и ```useListContext```.
+Как видно, часть контроллера представления списка обрабатывается хуком ```useListController```. Если не хочется использовать ```<ListContext>``` в кастомном списке, можно использовать ```useListContoller```, чтобы напрямую получить доступ к данным списка. Он возваращает такой же объект как и ```useListContext```.
 
 Если кастомный компонент не использует ```ListContextProvider```, нельзя использовать ```<Datagrid>```, ```<Simplelist>```, ```<Pagination>``` и т.д. Все эти компоненты полагаются на ```ListContext```.
+
+## Datagrig
+
+Компонент Datagrid отображает список записей в виде таблицы. Обычно он используется как потомок компонентов ```<List>``` и ```<ReferenceManyField>```. Без этих компонентов он должен использоваться внутри ```<ListContext>```.
+
+Свойства компонента ```<Datagrid>```:
+   * ```body```
+   * ```rowStyle```
+   * ```rowClick```
+   * ```expand```
+   * ```isRowSelectable```
+   
+Он отображается, как множество колонок и принимает ```<Field>``` в качестве детей. Использует поле ```<label>``` для заголовка колонки. Для полей без ```label``` в качестве заголовка используется ```source```.
+
+Пример:
+```js
+   import * as React from "react";
+   import { List, Datagrid, TextField, EditButton } from 'react-admin';
+
+   export const PostList = (props) => (
+      <List {...props}>
+         <Datagrid>
+            <TextField source="id" />
+            <TextField source="title" />
+            <TextField source="body" />
+            <EditButton />
+           </Datagrid>
+      </List>
+   );
+```
+
+```<Datagrid>``` - это компонент итератор. Он получает массив id и данные из ```ListContex``` и проходит по id отображая каждую запись. Другим примером компонента итератора является ```<SingleFieldList>```.
+
+### body
+
+По умолчанию ```<Datagrid>``` отображет тело(данные), используя служебный компонент ```<DatagridBody>```. Можно передать свой собственнй компонент в ```body```.
+У ```<DatagridBody>``` есть свойство ```row``` настроенное через ```<DatagridRow>``` по умолчанию для тех же целей. ```<DatagridRow>``` принимает запись ```record``` для строки, ```resource``` и копию детей ```Datagrid```. Это позволяет создавать собственную логику без копирования нескольких
+
+### rowStyle
+
+Можно здать собсвенные стили для для строки ```<Datagrid>```, применяется к ```<tr>```. ```rowStyle``` ожидает функцию, которая применяется для каждой строки, передавая текущую запись и индекс как аргументы. Функция возврщает объект со стилями.
+
+Пример:
+```js
+   const postRowStyle = (record, index) => ({
+      backgroundColor: record.nb_views >= 500 ? '#efe' : 'white',
+   });
+   export const PostList = (props) => (
+      <List {...props}>
+         <Datagrid rowStyle={postRowStyle}>
+            ...
+        </Datagrid>
+    </List>
+);
+```
+
+### rowClick
+
+Можно ловить клики по строкам и перенаправлять их, чтобы показать внутреннее отображение строки или для редактирования.
+```rowClick``` принимает следующие значения:
+   * "edit" - направит на редактирование
+   * "show" - покажет новое окно
+   * "expand" - откроет ```expand``` панель
+   * "toggleSelection" - для запуска ```onToggleItem```
+   * function(id, basePath, record) => path для редиректа по кастомному пути
+   
+### expand
+
+Чтобы показать больше данных, не добавляя множество колонок, можно показать их в панели расширения, расширяя строку вниз по клику. Для этого используется свойство ```expand```. 
+
+Пример:
+```js
+
+const PostPanel = ({ id, record, resource }) => (
+    <div dangerouslySetInnerHTML={{ __html: record.body }} />
+);
+
+const PostList = props => (
+    <List {...props}>
+        <Datagrid expand={<PostPanel />}>
+            <TextField source="id" />
+            <TextField source="title" />
+            <DateField source="published_at" />
+            <BooleanField source="commentable" />
+            <EditButton />
+        </Datagrid>
+    </List>
+)
+```
+
+### isRowSelectable
+
+С помощью этого свойства для строки можно добавить чекбокс. Оно ожидает функцию, которая будет передавать запись для каждого ```<DatagridRow>``` и возращать булево выражение.
+В этом примере чекбоксы будут показаны для колонок шире 300:
+```js
+export const PostList = props => (
+    <List {...props}>
+        <Datagrid isRowSelectable={ record => record.id > 300 }>
+            ...
+        </Datagrid>
+    </List>
+);
+```
+
+### CSS
+Можно использовать className.
+Можно стилизовать используя свойства:
+   * ```table```: альтернатива ```className```. Применяется к корневому элементу.
+   * ```tbody```: применятеся к tbody.
+   * ```headerCell```: применяется к заголовкам ячеек.
+   * ```row```: применяется к каждой колонке.
+   * ```rowEven```: применятся к четным строкам.
+   * ```rowOdd```: применятся к нечётным строкам.
+   * ```rowCell``` применяется к кажддой ячейке строки.
+
+Пример:
+```js
+import * as React from "react";
+import { makeStyles } from '@material-ui/core';
+
+const useStyles = makeStyles({
+    row: {
+        backgroundColor: '#ccc',
+    },
+});
+
+const PostList = props => {
+    const classes = useStyles();
+    return (
+        <List {...props}>
+            <Datagrid classes={{ row: classes.row }}>
+                ...
+            </Datagrid>
+        </List>
+    );
+}
+```
+
+Если нужно переписать стили для хедера и ячейки независимо для каждой колонки, нужно использовать ```headerClassName``` и ```cellClassName``` в ```<Field>```.
+Нельзя использовать для обёрнутых компонентов.
+Пример:
+```js
+import * as React from "react";
+import { makeStyles } from '@material-ui/core';
+
+const useStyles = makeStyles(theme => ({
+    hiddenOnSmallScreens: {
+        [theme.breakpoints.down('md')]: {
+            display: 'none',
+        },
+    },
+}));
+
+const PostList = props => {
+    const classes = useStyles();
+    return (
+        <List {...props}>
+            <Datagrid>
+                <TextField source="id" />
+                <TextField source="title" />
+                <TextField
+                    source="views"
+                    headerClassName={classes.hiddenOnSmallScreens}
+                    cellClassName={classes.hiddenOnSmallScreens}
+                />
+            </Datagrid>
+        </List>
+    );
+};
+```

@@ -19,6 +19,7 @@
       * [expand](#expand)
       * [isRowSelectable](#isrowslectable)
       * [CSS](#css)
+1. [SimpleList](#simplelist)
 
 ## Описание (Проводник данных)
   
@@ -562,3 +563,7 @@ const PostList = props => {
     );
 };
 ```
+
+## SimpleList
+
+Для мобилок ```<Datagrid>``` часто не подходит, не хватает места для отображения нескольких колонок. В этом случае можно использовать простой список с одной колонкой на строке ```<SimpleList>```, использующий [material-ui](#https://material-ui.com/components/lists/)

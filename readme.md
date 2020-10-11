@@ -566,4 +566,35 @@ const PostList = props => {
 
 ## SimpleList
 
-Для мобилок ```<Datagrid>``` часто не подходит, не хватает места для отображения нескольких колонок. В этом случае можно использовать простой список с одной колонкой на строке ```<SimpleList>```, использующий [material-ui](#https://material-ui.com/components/lists/)
+Для мобилок ```<Datagrid>``` часто не подходит, не хватает места для отображения нескольких колонок. В этом случае можно использовать простой список с одной колонкой на строке ```<SimpleList>``` и ```<ListItem>```, использующий [material-ui's](#https://material-ui.com/components/lists/). ```<SimpleList>``` - это компонент итератор: получает массив ids и данные из ```<ListContext>``` и, проходя по id отображает каждую запись.
+
+### Свойства
+| Свойство | Обязательность | Тип | По-умолчанию | Описание 
+| ----- | ----- | ----- | ----- | ----- 
+| ```primatyText``` | Обязательно | Функция | - | Передаётся, как свойство ```<ListItemText primary>``` |
+| ```secondaryText``` | Опционально | Функция | - | Передаётся, как свойство ```<ListItemText secondary>``` |
+| ```tertiaryText``` | Опционально | Функция | - | Передаётся, как комплемент в ```<ListItemText primary>``` с пользовательским стилем |
+| ```linkType``` | Опционально |```строка``` | ```Функция``` | ```false``` | редактируется | Цель ссылки ```<ListItem>```. Установить ```false```, чтобы отключить ссылку. При передаче функции ```(record, id) => string``` будет применена ссылка для каждой отдельной записи. |
+| ```leftAvatar``` | Опционально | Функция | - | Если установлено, то ```<ListItem>``` отображает ```<ListItemAvatar>``` перед ```<ListItemText>``` |
+| ```leftIcon``` | Опционально | Функция | - | Если установлено, то  ```<ListItem>``` отображает ```<ListItemAvatar>``` перед ```<ListItemText>``` |
+| ```rightAvatar``` | Опционально | Функция | - | Если установлено, то  ```<ListItem>``` отображает ```<ListItemAvatar>``` после ```<ListItemText>``` |
+| ```rightIcon``` | Опционально | Функция | - | Если установлено, то  ```<ListItem>``` отображает ```<ListItemAvatar>``` после ```<ListItemText>``` |
+| ```className``` | Опционально | строка | - | Применяется к корневому элементу |
+
+#### Использование
+Можно использовать ```<SimpleList>```, как дочерний компонент ```<List>```  или ```<ReferenceManyChild>```:
+```js
+import * as React from "react";
+import { List, SimpleList } from 'react-admin';
+
+export const PostList = (props) => (
+    <List {...props}>
+        <SimpleList
+            primaryText={record => record.title}
+            secondaryText={record => `${record.views} views`}
+            tertiaryText={record => new Date(record.published_at).toLocaleDateString()}
+            linkType={record => record.canEdit ? "edit" : "show"}
+        />
+    </List>
+);
+```
